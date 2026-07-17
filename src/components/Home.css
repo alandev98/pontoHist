@@ -84,8 +84,23 @@
   transform: scale(1.1);
 }
 
-.punch-button:active {
+.punch-button:active:not(.disabled) {
   transform: scale(0.95);
+}
+
+.punch-button.disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  border-color: var(--success-color);
+}
+
+.punch-button.disabled .punch-icon-wrapper {
+  background: var(--success-color);
+  box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
+}
+
+.punch-button.disabled::before {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
 }
 
 .punch-action-label {

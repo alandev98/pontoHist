@@ -1,4 +1,4 @@
-import { format, differenceInMinutes, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { format, differenceInMinutes, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, eachDayOfInterval, isWeekend } from 'date-fns';
 
 /**
  * Retorna a data no formato YYYY-MM-DD
@@ -66,5 +66,19 @@ export function getPunchesForCurrentMonth(punches, currentDate = new Date()) {
   const end = endOfMonth(currentDate);
   
   return punches.filter(p => isWithinInterval(new Date(p.timestamp), { start, end }));
+}
+
+/**
+ * Calcula a meta de minutos a trabalhar no mês (baseado em seg-sex)
+ */
+export function calculateMonthlyTarget(weeklyHours, currentDate = new Date()) {
+  const start = startOfMonth(currentDate);
+  const end = endOfMonth(currentDate);
+  
+  const daysInMonth = eachDayOfInterval({ start, end });
+  const workingDays = daysInMonth.filter(day => !isWeekend(day)).length;
+  
+  const dailyHoursTarget = weeklyHours / 5;
+  return Math.round(workingDays * dailyHoursTarget * 60);
 }
 

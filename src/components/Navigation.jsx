@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Clock, Settings as SettingsIcon } from 'lucide-react';
+import { Home, Clock, Settings as SettingsIcon, LayoutDashboard } from 'lucide-react';
 import './Navigation.css';
 
 function Navigation({ activeTab, setActiveTab }) {
@@ -11,6 +11,14 @@ function Navigation({ activeTab, setActiveTab }) {
       >
         <Home size={24} />
         <span>Início</span>
+      </button>
+      
+      <button 
+        className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
+        onClick={() => setActiveTab('dashboard')}
+      >
+        <LayoutDashboard size={24} />
+        <span>Dashboard</span>
       </button>
       
       <button 

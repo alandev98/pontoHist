@@ -145,3 +145,27 @@ h1, h2, h3 {
   outline: none;
   border-color: var(--primary-color);
 }
+
+/* Toast Global */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  padding: 12px 24px;
+  border-radius: 30px;
+  color: white;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  animation: fadeInDown 0.3s ease;
+  text-align: center;
+}
+
+.toast-success { background-color: var(--success-color); }
+.toast-error { background-color: var(--danger-color); }
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translate(-50%, -20px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}

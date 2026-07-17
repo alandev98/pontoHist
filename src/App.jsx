@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Navigation from './components/Navigation';
 import Home from './components/Home';
+import Dashboard from './components/Dashboard';
 import History from './components/History';
 import Settings from './components/Settings';
 import { initSettings } from './db';
@@ -21,6 +22,7 @@ function App() {
     <>
       <main className="content-area">
         {activeTab === 'home' && <Home />}
+        {activeTab === 'dashboard' && <Dashboard />}
         {activeTab === 'history' && <History />}
         {activeTab === 'settings' && <Settings />}
       </main>

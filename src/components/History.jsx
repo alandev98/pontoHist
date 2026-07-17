@@ -9,6 +9,7 @@ import './History.css';
 function History() {
   const [expandedDays, setExpandedDays] = useState({});
   const [editModal, setEditModal] = useState({ isOpen: false, punch: null, newTime: '' });
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, day: null });
 
   // Buscar todos os pontos, ordenados por data (mais recente primeiro)
   const allPunches = useLiveQuery(() => db.punches.orderBy('timestamp').reverse().toArray());
@@ -33,8 +34,13 @@ function History() {
 
   const handleDeleteDay = async (e, day) => {
     e.stopPropagation();
-    if (window.confirm(`Tem certeza que deseja apagar todos os registros do dia ${day}?`)) {
-      await db.punches.where('dateString').equals(day).delete();
+    setConfirmModal({ isOpen: true, day });
+  };
+
+  const confirmDeleteDay = async () => {
+    if (confirmModal.day) {
+      await db.punches.where('dateString').equals(confirmModal.day).delete();
+      setConfirmModal({ isOpen: false, day: null });
     }
   };
 
@@ -169,6 +175,31 @@ function History() {
             <div className="modal-footer">
               <button className="btn btn-primary" style={{ width: '100%' }} onClick={saveEdit}>
                 Salvar Alteração
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmModal.isOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content glass-card animate-fade-in">
+            <header className="modal-header">
+              <h3>Apagar Dia</h3>
+              <button className="expand-btn" onClick={() => setConfirmModal({ isOpen: false, day: null })}>
+                <X size={20} />
+              </button>
+            </header>
+            <div className="modal-body text-center" style={{ textAlign: 'center' }}>
+              <Trash2 size={48} className="text-danger" style={{ marginBottom: '15px', opacity: 0.8 }} />
+              <p>Tem certeza que deseja apagar permanentemente todos os registros do dia <strong>{confirmModal.day.split('-').reverse().join('/')}</strong>?</p>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', gap: '10px' }}>
+              <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setConfirmModal({ isOpen: false, day: null })}>
+                Cancelar
+              </button>
+              <button className="btn btn-danger" style={{ flex: 1 }} onClick={confirmDeleteDay}>
+                Apagar
               </button>
             </div>
           </div>

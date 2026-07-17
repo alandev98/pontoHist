@@ -1,24 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { db, defaultSettings } from '../db';
-import { Save, Upload, Download, Trash2, Plus } from 'lucide-react';
+import { Save, Upload, Download, Trash2, Plus, Smartphone } from 'lucide-react';
 import './Settings.css';
 
 function Settings() {
   const [weeklyHours, setWeeklyHours] = useState(44);
   const [punchCycle, setPunchCycle] = useState([]);
-  const [saveStatus, setSaveStatus] = useState('');
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [toastMessage, setToastMessage] = useState({ text: '', type: '' });
 
-  // Carregar dados
+  const showToast = (text, type = 'success') => {
+    setToastMessage({ text, type });
+    setTimeout(() => setToastMessage({ text: '', type: '' }), 3000);
+  };
+
+  // Carregar dados e eventos
   useEffect(() => {
     db.settings.get('weeklyHours').then(res => setWeeklyHours(res?.value || 44));
     db.settings.get('punchCycle').then(res => setPunchCycle(res?.value || defaultSettings.punchCycle));
+
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
   }, []);
 
   const handleSave = async () => {
     await db.settings.put({ key: 'weeklyHours', value: Number(weeklyHours) });
     await db.settings.put({ key: 'punchCycle', value: punchCycle });
-    setSaveStatus('Salvo com sucesso!');
-    setTimeout(() => setSaveStatus(''), 3000);
+    showToast('Salvo com sucesso!');
   };
 
   const handleCycleChange = (index, value) => {
@@ -35,6 +51,16 @@ function Settings() {
 
   const addCycleItem = () => {
     setPunchCycle([...punchCycle, { label: 'Novo Ponto', type: 'extra' }]);
+  };
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+      }
+    }
   };
 
   // Backup e Restauração
@@ -65,10 +91,10 @@ function Settings() {
         if (data.punches) await db.punches.bulkPut(data.punches);
         if (data.settings) await db.settings.bulkPut(data.settings);
         
-        alert('Backup restaurado com sucesso! O aplicativo será recarregado.');
-        window.location.reload();
+        showToast('Backup restaurado com sucesso! Recarregando...');
+        setTimeout(() => window.location.reload(), 2000);
       } catch (err) {
-        alert('Erro ao restaurar backup. Verifique o arquivo.');
+        showToast('Erro ao restaurar backup. Verifique o arquivo.', 'error');
       }
     };
     reader.readAsText(file);
@@ -83,7 +109,11 @@ function Settings() {
         </button>
       </header>
 
-      {saveStatus && <div className="save-toast">{saveStatus}</div>}
+      {toastMessage.text && (
+        <div className={`toast-container toast-${toastMessage.type}`}>
+          {toastMessage.text}
+        </div>
+      )}
 
       <section className="settings-section glass-card">
         <h2>Geral</h2>
@@ -123,6 +153,21 @@ function Settings() {
         <button className="btn btn-outline btn-add" onClick={addCycleItem}>
           <Plus size={18} /> Adicionar Ponto ao Ciclo
         </button>
+      </section>
+
+      <section className="settings-section glass-card">
+        <h2>Aplicativo</h2>
+        <div className="backup-actions">
+          {deferredPrompt ? (
+            <button className="btn btn-primary" onClick={handleInstallClick}>
+              <Smartphone size={18} /> Instalar Aplicativo no Celular
+            </button>
+          ) : (
+            <p className="section-desc text-success">
+              O aplicativo já está instalado ou rodando nativamente no seu dispositivo.
+            </p>
+          )}
+        </div>
       </section>
 
       <section className="settings-section glass-card">

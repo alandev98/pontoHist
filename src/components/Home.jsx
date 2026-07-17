@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
-import { getCurrentDateString, formatTime, calculateWorkedMinutes, formatMinutesAsHours, getPunchesForCurrentWeek, getPunchesForCurrentMonth } from '../utils/time';
+import { getCurrentDateString, formatTime, calculateWorkedMinutes, formatMinutesAsHours } from '../utils/time';
 import { Fingerprint, CheckCircle2 } from 'lucide-react';
 import './Home.css';
 
 function Home() {
   const [cycleConfig, setCycleConfig] = useState([]);
-  const [weeklyHoursTarget, setWeeklyHoursTarget] = useState(40);
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const todayString = getCurrentDateString();
@@ -17,9 +16,6 @@ function Home() {
     db.settings.get('punchCycle').then(res => {
       if (res && res.value) setCycleConfig(res.value);
     });
-    db.settings.get('weeklyHours').then(res => {
-      if (res && res.value) setWeeklyHoursTarget(res.value);
-    });
   }, []);
 
   // Atualizar relógio
@@ -28,22 +24,39 @@ function Home() {
     return () => clearInterval(timer);
   }, []);
 
-  // Buscar os pontos de hoje e todos os pontos para os cálculos globais
+  const triggerMonthlyBackup = async () => {
+    const rawPunches = await db.punches.toArray();
+    const settings = await db.settings.toArray();
+    const monthlyPunches = getPunchesForCurrentMonth(rawPunches);
+    
+    const backupData = { punches: monthlyPunches, settings };
+    const blob = new Blob([JSON.stringify(backupData)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    // Formato: ponto_backup_mes_YYYY-MM.json
+    link.setAttribute('download', `ponto_backup_mes_${new Date().toISOString().slice(0,7)}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Buscar os pontos de hoje
   const todaysPunches = useLiveQuery(
     () => db.punches.where('dateString').equals(todayString).sortBy('timestamp'),
     [todayString]
   );
-
-  const allPunches = useLiveQuery(() => db.punches.toArray());
 
   const handlePunch = async () => {
     if (!cycleConfig.length) return;
 
     const currentPunchCount = todaysPunches ? todaysPunches.length : 0;
     
-    // Calcula qual é o tipo do próximo ponto baseado no ciclo
-    // Se passar do ciclo, repete a lógica (para dias com hora extra ou saídas extras)
-    const nextPunchIndex = currentPunchCount % cycleConfig.length;
+    // Se já completou o ciclo, não deixa registrar mais
+    if (currentPunchCount >= cycleConfig.length) return;
+
+    const nextPunchIndex = currentPunchCount;
     const nextPunchDef = cycleConfig[nextPunchIndex];
 
     await db.punches.add({
@@ -52,32 +65,26 @@ function Home() {
       dateString: todayString,
       label: nextPunchDef.label
     });
+
+    // Se essa foi a última batida do dia, aciona o backup mensal
+    if (currentPunchCount + 1 === cycleConfig.length) {
+      setTimeout(() => {
+        triggerMonthlyBackup();
+      }, 500);
+    }
   };
 
-  if (!todaysPunches || !allPunches) return <div className="p-4">Carregando...</div>;
+  if (!todaysPunches) return <div className="p-4">Carregando...</div>;
 
   const currentPunchCount = todaysPunches.length;
-  const nextPunchIndex = currentPunchCount % cycleConfig.length;
-  const nextPunchDef = cycleConfig[nextPunchIndex] || { label: 'Registrar' };
-
-  const isCycleComplete = currentPunchCount > 0 && currentPunchCount % cycleConfig.length === 0;
+  const isCycleComplete = currentPunchCount >= cycleConfig.length;
+  
+  const nextPunchDef = isCycleComplete 
+    ? { label: 'Jornada Completa' } 
+    : cycleConfig[currentPunchCount] || { label: 'Registrar' };
 
   // Calculo simples do dia
   const workedMinutesToday = calculateWorkedMinutes(todaysPunches);
-
-  // Cálculos da semana e mês
-  const weeklyPunches = getPunchesForCurrentWeek(allPunches);
-  const monthlyPunches = getPunchesForCurrentMonth(allPunches);
-
-  const workedMinutesWeek = calculateWorkedMinutes(weeklyPunches);
-  const workedMinutesMonth = calculateWorkedMinutes(monthlyPunches);
-
-  // Meta da semana em minutos
-  const targetMinutesWeek = weeklyHoursTarget * 60;
-  const balanceMinutesWeek = workedMinutesWeek - targetMinutesWeek;
-  
-  // Classe condicional pro saldo
-  const balanceClass = balanceMinutesWeek >= 0 ? 'text-success' : 'text-danger';
 
   return (
     <div className="home-container animate-fade-in">
@@ -88,11 +95,16 @@ function Home() {
 
       <section className="punch-section">
         <button 
-          className="punch-button glass-card"
+          className={`punch-button glass-card ${isCycleComplete ? 'disabled' : ''}`}
           onClick={handlePunch}
+          disabled={isCycleComplete}
         >
           <div className="punch-icon-wrapper">
-            <Fingerprint size={48} strokeWidth={1.5} />
+            {isCycleComplete ? (
+              <CheckCircle2 size={48} strokeWidth={1.5} />
+            ) : (
+              <Fingerprint size={48} strokeWidth={1.5} />
+            )}
           </div>
           <span className="punch-action-label">{nextPunchDef.label}</span>
         </button>
@@ -100,31 +112,13 @@ function Home() {
         {isCycleComplete && (
           <div className="cycle-complete-message">
             <CheckCircle2 size={20} className="success-icon" />
-            <span>Ciclo diário concluído</span>
+            <span>Todos os pontos de hoje foram registrados.</span>
           </div>
         )}
       </section>
 
       <section className="dashboard-summary glass-card">
-        <h2>Resumo Geral</h2>
-        <div className="summary-stats" style={{ gridTemplateColumns: '1fr 1fr', marginBottom: '15px' }}>
-          <div className="stat-box">
-            <span className="stat-label">Semana Atual</span>
-            <span className="stat-value">{formatMinutesAsHours(workedMinutesWeek)}</span>
-          </div>
-          <div className="stat-box">
-            <span className="stat-label">Saldo Semanal</span>
-            <span className={`stat-value ${balanceClass}`}>
-              {balanceMinutesWeek > 0 ? '+' : ''}{formatMinutesAsHours(balanceMinutesWeek)}
-            </span>
-          </div>
-          <div className="stat-box" style={{ gridColumn: 'span 2' }}>
-            <span className="stat-label">Acumulado do Mês</span>
-            <span className="stat-value">{formatMinutesAsHours(workedMinutesMonth)}</span>
-          </div>
-        </div>
-
-        <h2>Registros de Hoje</h2>
+        <h2>Resumo de Hoje</h2>
         <div className="summary-stats">
           <div className="stat-box">
             <span className="stat-label">Horas Trabalhadas</span>
