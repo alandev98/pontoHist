@@ -1,4 +1,4 @@
-import { format, differenceInMinutes, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, eachDayOfInterval, isWeekend } from 'date-fns';
+import { format, differenceInMinutes, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, eachDayOfInterval, isWeekend } from 'date-fns';
 
 /**
  * Retorna a data no formato YYYY-MM-DD
@@ -19,17 +19,30 @@ export function formatTime(timestamp) {
  * Assume que as batidas vêm em pares de (Entrada -> Saída)
  */
 export function calculateWorkedMinutes(punches) {
+  // Agrupar batidas por dia (dateString) para evitar deslocamentos caso algum dia tenha batidas ímpares
+  const punchesByDay = {};
+  for (const punch of punches) {
+    const day = punch.dateString || format(new Date(punch.timestamp), 'yyyy-MM-dd');
+    if (!punchesByDay[day]) {
+      punchesByDay[day] = [];
+    }
+    punchesByDay[day].push(punch);
+  }
+
   let totalMinutes = 0;
-  
-  // Ordenar por horário para garantir a sequência
-  const sortedPunches = [...punches].sort((a, b) => a.timestamp - b.timestamp);
 
-  for (let i = 0; i < sortedPunches.length; i += 2) {
-    const start = sortedPunches[i];
-    const end = sortedPunches[i + 1];
+  for (const day in punchesByDay) {
+    const dayPunches = punchesByDay[day];
+    // Ordenar por horário para garantir a sequência
+    const sortedPunches = [...dayPunches].sort((a, b) => a.timestamp - b.timestamp);
 
-    if (start && end) {
-      totalMinutes += differenceInMinutes(new Date(end.timestamp), new Date(start.timestamp));
+    for (let i = 0; i < sortedPunches.length; i += 2) {
+      const start = sortedPunches[i];
+      const end = sortedPunches[i + 1];
+
+      if (start && end) {
+        totalMinutes += differenceInMinutes(new Date(end.timestamp), new Date(start.timestamp));
+      }
     }
   }
 
