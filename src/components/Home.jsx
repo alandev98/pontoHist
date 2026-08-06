@@ -83,8 +83,34 @@ function Home() {
     ? { label: 'Jornada Completa' } 
     : cycleConfig[currentPunchCount] || { label: 'Registrar' };
 
-  // Calculo simples do dia
-  const workedMinutesToday = calculateWorkedMinutes(todaysPunches);
+  const getLiveWorkedSeconds = () => {
+    if (!todaysPunches || todaysPunches.length === 0) return 0;
+    
+    let totalSeconds = 0;
+    const sorted = [...todaysPunches].sort((a, b) => a.timestamp - b.timestamp);
+    
+    for (let i = 0; i < sorted.length; i += 2) {
+      const start = sorted[i];
+      const end = sorted[i + 1];
+      
+      if (start && end) {
+        totalSeconds += Math.floor((end.timestamp - start.timestamp) / 1000);
+      } else if (start && !end) {
+        totalSeconds += Math.floor((currentTime.getTime() - start.timestamp) / 1000);
+      }
+    }
+    
+    return totalSeconds;
+  };
+
+  const formatSecondsAsTime = (totalSeconds) => {
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  };
+
+  const liveWorkedSeconds = getLiveWorkedSeconds();
 
   return (
     <div className="home-container animate-fade-in">
@@ -122,7 +148,9 @@ function Home() {
         <div className="summary-stats">
           <div className="stat-box">
             <span className="stat-label">Horas Trabalhadas</span>
-            <span className="stat-value">{formatMinutesAsHours(workedMinutesToday)}</span>
+            <span className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>
+              {formatSecondsAsTime(liveWorkedSeconds)}
+            </span>
           </div>
           <div className="stat-box">
             <span className="stat-label">Batidas Hoje</span>

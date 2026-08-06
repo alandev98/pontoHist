@@ -29,6 +29,7 @@ function Dashboard() {
   const workedMinutesWeek = calculateWorkedMinutes(weeklyPunches);
   const targetMinutesWeek = weeklyHoursTarget * 60;
   const balanceMinutesWeek = workedMinutesWeek - targetMinutesWeek;
+  const overtimeMinutesWeek = balanceMinutesWeek > 0 ? balanceMinutesWeek : 0;
   const weekProgress = Math.min((workedMinutesWeek / targetMinutesWeek) * 100, 100);
 
   // Mês
@@ -36,6 +37,7 @@ function Dashboard() {
   const workedMinutesMonth = calculateWorkedMinutes(monthlyPunches);
   const targetMinutesMonth = calculateMonthlyTarget(weeklyHoursTarget);
   const balanceMinutesMonth = workedMinutesMonth - targetMinutesMonth;
+  const overtimeMinutesMonth = balanceMinutesMonth > 0 ? balanceMinutesMonth : 0;
   const monthProgress = Math.min((workedMinutesMonth / targetMinutesMonth) * 100, 100);
 
   const getBalanceClass = (balance) => balance >= 0 ? 'text-success' : 'text-danger';
@@ -62,11 +64,15 @@ function Dashboard() {
             <span className="stat-label">Meta</span>
             <span className="stat-value">{weeklyHoursTarget}h</span>
           </div>
-          <div className="stat-card stat-full">
-            <span className="stat-label">Saldo da Semana</span>
+          <div className="stat-card">
+            <span className="stat-label">Saldo</span>
             <span className={`stat-value ${getBalanceClass(balanceMinutesWeek)}`}>
               {getBalanceSign(balanceMinutesWeek)}{formatMinutesAsHours(balanceMinutesWeek)}
             </span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Horas Extras</span>
+            <span className="stat-value text-success">{formatMinutesAsHours(overtimeMinutesWeek)}</span>
           </div>
         </div>
 
@@ -96,11 +102,15 @@ function Dashboard() {
             <span className="stat-label">Meta do Mês</span>
             <span className="stat-value">{formatMinutesAsHours(targetMinutesMonth)}</span>
           </div>
-          <div className="stat-card stat-full">
-            <span className="stat-label">Saldo do Mês</span>
+          <div className="stat-card">
+            <span className="stat-label">Saldo</span>
             <span className={`stat-value ${getBalanceClass(balanceMinutesMonth)}`}>
               {getBalanceSign(balanceMinutesMonth)}{formatMinutesAsHours(balanceMinutesMonth)}
             </span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Horas Extras</span>
+            <span className="stat-value text-success">{formatMinutesAsHours(overtimeMinutesMonth)}</span>
           </div>
         </div>
 

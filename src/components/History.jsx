@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { formatTime, calculateWorkedMinutes, formatMinutesAsHours } from '../utils/time';
-import { Download, ChevronDown, ChevronUp, Pencil, Trash2, X } from 'lucide-react';
+import { Download, ChevronDown, ChevronUp, Pencil, Trash2, X, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import './History.css';
 
@@ -10,9 +10,11 @@ function History() {
   const [expandedDays, setExpandedDays] = useState({});
   const [editModal, setEditModal] = useState({ isOpen: false, punch: null, newTime: '' });
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, day: null });
+  const [addModal, setAddModal] = useState({ isOpen: false, date: '', time: '', typeIdx: 0 });
 
   // Buscar todos os pontos, ordenados por data (mais recente primeiro)
   const allPunches = useLiveQuery(() => db.punches.orderBy('timestamp').reverse().toArray());
+  const cycleConfig = useLiveQuery(() => db.settings.get('punchCycle').then(res => res ? res.value : []));
 
   if (!allPunches) return <div className="p-4">Carregando histórico...</div>;
 
@@ -66,6 +68,26 @@ function History() {
     setEditModal({ isOpen: false, punch: null, newTime: '' });
   };
 
+  const saveAdd = async () => {
+    const { date, time, typeIdx } = addModal;
+    if (!date || !time || !cycleConfig || !cycleConfig[typeIdx]) return;
+
+    const [hours, minutes] = time.split(':');
+    const [year, month, d] = date.split('-');
+    const dateObj = new Date(year, month - 1, d, hours, minutes, 0);
+
+    const punchDef = cycleConfig[typeIdx];
+
+    await db.punches.add({
+      timestamp: dateObj.getTime(),
+      type: punchDef.type,
+      dateString: date,
+      label: punchDef.label
+    });
+
+    setAddModal({ isOpen: false, date: '', time: '', typeIdx: 0 });
+  };
+
   const handleExportCSV = () => {
     if (!allPunches.length) return;
 
@@ -96,10 +118,16 @@ function History() {
     <div className="history-container animate-fade-in">
       <header className="history-header">
         <h1>Histórico</h1>
-        <button className="btn btn-outline" onClick={handleExportCSV}>
-          <Download size={18} />
-          Exportar CSV
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button className="btn btn-outline" onClick={handleExportCSV}>
+            <Download size={18} />
+            Exportar CSV
+          </button>
+          <button className="btn btn-primary" onClick={() => setAddModal({ isOpen: true, date: new Date().toISOString().slice(0,10), time: '08:00', typeIdx: 0 })}>
+            <Plus size={18} />
+            Adicionar
+          </button>
+        </div>
       </header>
 
       <div className="days-list">
@@ -200,6 +228,58 @@ function History() {
               </button>
               <button className="btn btn-danger" style={{ flex: 1 }} onClick={confirmDeleteDay}>
                 Apagar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {addModal.isOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content glass-card animate-fade-in">
+            <header className="modal-header">
+              <h3>Adicionar Ponto Manual</h3>
+              <button className="expand-btn" onClick={() => setAddModal({ isOpen: false, date: '', time: '', typeIdx: 0 })}>
+                <X size={20} />
+              </button>
+            </header>
+            <div className="modal-body">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <div>
+                  <label className="text-secondary" style={{ fontSize: '0.9rem', marginBottom: '5px', display: 'block' }}>Data</label>
+                  <input 
+                    type="date" 
+                    className="input-field" 
+                    value={addModal.date} 
+                    onChange={(e) => setAddModal({ ...addModal, date: e.target.value })} 
+                  />
+                </div>
+                <div>
+                  <label className="text-secondary" style={{ fontSize: '0.9rem', marginBottom: '5px', display: 'block' }}>Hora</label>
+                  <input 
+                    type="time" 
+                    className="input-field" 
+                    value={addModal.time} 
+                    onChange={(e) => setAddModal({ ...addModal, time: e.target.value })} 
+                  />
+                </div>
+                <div>
+                  <label className="text-secondary" style={{ fontSize: '0.9rem', marginBottom: '5px', display: 'block' }}>Tipo</label>
+                  <select 
+                    className="input-field" 
+                    value={addModal.typeIdx} 
+                    onChange={(e) => setAddModal({ ...addModal, typeIdx: parseInt(e.target.value, 10) })}
+                  >
+                    {cycleConfig?.map((cycle, idx) => (
+                      <option key={idx} value={idx}>{cycle.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-primary" style={{ width: '100%' }} onClick={saveAdd}>
+                Salvar Ponto
               </button>
             </div>
           </div>
