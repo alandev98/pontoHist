@@ -117,15 +117,12 @@ function History() {
   return (
     <div className="history-container animate-fade-in">
       <header className="history-header">
-        <h1>Histórico</h1>
         <div style={{ display: 'flex', gap: '10px' }}>
-          <button className="btn btn-outline" onClick={handleExportCSV}>
+          <button className="btn btn-outline" onClick={handleExportCSV} title="Exportar CSV" style={{ padding: '10px' }}>
             <Download size={18} />
-            Exportar CSV
           </button>
-          <button className="btn btn-primary" onClick={() => setAddModal({ isOpen: true, date: new Date().toISOString().slice(0,10), time: '08:00', typeIdx: 0 })}>
+          <button className="btn btn-primary" onClick={() => setAddModal({ isOpen: true, date: new Date().toISOString().slice(0,10), time: '08:00', typeIdx: 0 })} title="Adicionar Ponto" style={{ padding: '10px' }}>
             <Plus size={18} />
-            Adicionar
           </button>
         </div>
       </header>
@@ -183,8 +180,8 @@ function History() {
       </div>
 
       {editModal.isOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content glass-card animate-fade-in">
+        <div className="modal-overlay" onClick={() => setEditModal({ isOpen: false, punch: null, newTime: '' })}>
+          <div className="modal-content glass-card animate-fade-in" onClick={e => e.stopPropagation()}>
             <header className="modal-header">
               <h3>Editar Horário</h3>
               <button className="expand-btn" onClick={() => setEditModal({ isOpen: false, punch: null, newTime: '' })}>
@@ -210,8 +207,8 @@ function History() {
       )}
 
       {confirmModal.isOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content glass-card animate-fade-in">
+        <div className="modal-overlay" onClick={() => setConfirmModal({ isOpen: false, day: null })}>
+          <div className="modal-content glass-card animate-fade-in" onClick={e => e.stopPropagation()}>
             <header className="modal-header">
               <h3>Apagar Dia</h3>
               <button className="expand-btn" onClick={() => setConfirmModal({ isOpen: false, day: null })}>
@@ -235,8 +232,8 @@ function History() {
       )}
 
       {addModal.isOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content glass-card animate-fade-in">
+        <div className="modal-overlay" onClick={() => setAddModal({ isOpen: false, date: '', time: '', typeIdx: 0 })}>
+          <div className="modal-content glass-card animate-fade-in" onClick={e => e.stopPropagation()}>
             <header className="modal-header">
               <h3>Adicionar Ponto Manual</h3>
               <button className="expand-btn" onClick={() => setAddModal({ isOpen: false, date: '', time: '', typeIdx: 0 })}>

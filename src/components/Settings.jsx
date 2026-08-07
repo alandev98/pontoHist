@@ -31,26 +31,30 @@ function Settings() {
     };
   }, []);
 
-  const handleSave = async () => {
-    await db.settings.put({ key: 'weeklyHours', value: Number(weeklyHours) });
-    await db.settings.put({ key: 'punchCycle', value: punchCycle });
-    showToast('Salvo com sucesso!');
+  const handleWeeklyHoursChange = (e) => {
+    const val = e.target.value;
+    setWeeklyHours(val);
+    db.settings.put({ key: 'weeklyHours', value: Number(val) });
   };
 
   const handleCycleChange = (index, value) => {
     const newCycle = [...punchCycle];
     newCycle[index].label = value;
     setPunchCycle(newCycle);
+    db.settings.put({ key: 'punchCycle', value: newCycle });
   };
 
   const removeCycleItem = (index) => {
     const newCycle = [...punchCycle];
     newCycle.splice(index, 1);
     setPunchCycle(newCycle);
+    db.settings.put({ key: 'punchCycle', value: newCycle });
   };
 
   const addCycleItem = () => {
-    setPunchCycle([...punchCycle, { label: 'Novo Ponto', type: 'extra' }]);
+    const newCycle = [...punchCycle, { label: 'Novo Ponto', type: 'extra' }];
+    setPunchCycle(newCycle);
+    db.settings.put({ key: 'punchCycle', value: newCycle });
   };
 
   const handleInstallClick = async () => {
@@ -102,13 +106,6 @@ function Settings() {
 
   return (
     <div className="settings-container animate-fade-in">
-      <header className="settings-header">
-        <h1>Configurações</h1>
-        <button className="btn btn-primary btn-save" onClick={handleSave}>
-          <Save size={18} /> Salvar
-        </button>
-      </header>
-
       {toastMessage.text && (
         <div className={`toast-container toast-${toastMessage.type}`}>
           {toastMessage.text}
@@ -123,7 +120,7 @@ function Settings() {
             type="number" 
             className="input-field" 
             value={weeklyHours} 
-            onChange={(e) => setWeeklyHours(e.target.value)} 
+            onChange={handleWeeklyHoursChange} 
             min="1" max="168"
           />
         </div>

@@ -45,9 +45,7 @@ function Dashboard() {
 
   return (
     <div className="dashboard-container animate-fade-in">
-      <header className="dashboard-header">
-        <h1>Dashboard</h1>
-      </header>
+
 
       <section className="dashboard-section glass-card">
         <div className="section-title">
