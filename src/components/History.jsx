@@ -2,13 +2,12 @@ import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { formatTime, calculateWorkedMinutes, formatMinutesAsHours } from '../utils/time';
-import { Download, ChevronDown, ChevronUp, Pencil, Trash2, X, Plus } from 'lucide-react';
+import { Download, ChevronDown, ChevronUp, Trash2, X, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import './History.css';
 
 function History() {
   const [expandedDays, setExpandedDays] = useState({});
-  const [editModal, setEditModal] = useState({ isOpen: false, punch: null, newTime: '' });
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, day: null });
   const [addModal, setAddModal] = useState({ isOpen: false, date: '', time: '', typeIdx: 0 });
 
@@ -46,18 +45,8 @@ function History() {
     }
   };
 
-  const openEditModal = (punch) => {
-    setEditModal({ 
-      isOpen: true, 
-      punch, 
-      newTime: format(new Date(punch.timestamp), 'HH:mm') 
-    });
-  };
-
-  const saveEdit = async () => {
-    const { punch, newTime } = editModal;
+  const handleTimeChange = async (punch, newTime) => {
     if (!newTime) return;
-
     const [hours, minutes] = newTime.split(':');
     const date = new Date(punch.timestamp);
     date.setHours(parseInt(hours, 10));
@@ -65,7 +54,6 @@ function History() {
     date.setSeconds(0);
     
     await db.punches.update(punch.id, { timestamp: date.getTime() });
-    setEditModal({ isOpen: false, punch: null, newTime: '' });
   };
 
   const saveAdd = async () => {
@@ -166,10 +154,12 @@ function History() {
                     <div key={punch.id} className="history-punch-item">
                       <span className="hp-number">{idx + 1}</span>
                       <span className="hp-label">{punch.label}</span>
-                      <span className="hp-time">{formatTime(punch.timestamp)}</span>
-                      <button className="expand-btn hp-edit" onClick={() => openEditModal(punch)}>
-                        <Pencil size={16} />
-                      </button>
+                      <input
+                        type="time"
+                        className="hp-time-input"
+                        value={formatTime(punch.timestamp)}
+                        onChange={(e) => handleTimeChange(punch, e.target.value)}
+                      />
                     </div>
                   ))}
                 </div>
@@ -179,32 +169,6 @@ function History() {
         })}
       </div>
 
-      {editModal.isOpen && (
-        <div className="modal-overlay" onClick={() => setEditModal({ isOpen: false, punch: null, newTime: '' })}>
-          <div className="modal-content glass-card animate-fade-in" onClick={e => e.stopPropagation()}>
-            <header className="modal-header">
-              <h3>Editar Horário</h3>
-              <button className="expand-btn" onClick={() => setEditModal({ isOpen: false, punch: null, newTime: '' })}>
-                <X size={20} />
-              </button>
-            </header>
-            <div className="modal-body">
-              <p className="text-secondary">{editModal.punch?.label}</p>
-              <input 
-                type="time" 
-                className="input-field mt-3" 
-                value={editModal.newTime} 
-                onChange={(e) => setEditModal({ ...editModal, newTime: e.target.value })} 
-              />
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-primary" style={{ width: '100%' }} onClick={saveEdit}>
-                Salvar Alteração
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {confirmModal.isOpen && (
         <div className="modal-overlay" onClick={() => setConfirmModal({ isOpen: false, day: null })}>

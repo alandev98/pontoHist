@@ -121,18 +121,35 @@
   color: var(--text-secondary);
 }
 
-.hp-time {
+.hp-time-input {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--surface-border);
+  color: var(--text-primary, inherit);
   font-weight: 600;
+  font-family: inherit;
+  font-size: 0.95rem;
+  padding: 4px 8px;
+  border-radius: 8px;
+  width: 90px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.hp-edit {
-  margin-left: 10px;
-  color: var(--primary-color);
-  opacity: 0.7;
+.hp-time-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  background: var(--surface-color);
 }
 
-.hp-edit:hover {
-  opacity: 1;
+@media (prefers-color-scheme: dark) {
+  .hp-time-input {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .hp-time-input::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+  }
 }
 
 .mt-3 {
