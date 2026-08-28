@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
-import { formatTime, calculateWorkedMinutes, formatMinutesAsHours } from '../utils/time';
+import { formatTime, calculateWorkedMinutes, formatMinutesAsHours, getCurrentDateString } from '../utils/time';
 import { Download, ChevronDown, ChevronUp, Trash2, X, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import './History.css';
@@ -106,11 +106,11 @@ function History() {
     <div className="history-container animate-fade-in">
       <header className="history-header">
         <div style={{ display: 'flex', gap: '10px' }}>
-          <button className="btn btn-outline" onClick={handleExportCSV} title="Exportar CSV" style={{ padding: '10px' }}>
-            <Download size={18} />
+          <button className="btn btn-outline" onClick={handleExportCSV} title="Exportar CSV" style={{ padding: '10px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <Download size={18} /> <span style={{ fontSize: '0.9rem' }}>Exportar</span>
           </button>
-          <button className="btn btn-primary" onClick={() => setAddModal({ isOpen: true, date: new Date().toISOString().slice(0,10), time: '08:00', typeIdx: 0 })} title="Adicionar Ponto" style={{ padding: '10px' }}>
-            <Plus size={18} />
+          <button className="btn btn-primary" onClick={() => setAddModal({ isOpen: true, date: getCurrentDateString(), time: '08:00', typeIdx: 0 })} title="Adicionar Ponto Manual" style={{ padding: '10px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <Plus size={18} /> <span style={{ fontSize: '0.9rem' }}>Novo Ponto</span>
           </button>
         </div>
       </header>
@@ -162,6 +162,17 @@ function History() {
                       />
                     </div>
                   ))}
+                  <button 
+                    className="btn btn-outline mt-3" 
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', borderStyle: 'dashed' }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const nextTypeIdx = dayPunches.length < (cycleConfig?.length || 4) ? dayPunches.length : 0;
+                      setAddModal({ isOpen: true, date: day, time: '12:00', typeIdx: nextTypeIdx });
+                    }}
+                  >
+                    <Plus size={16} /> Adicionar Batida Faltante
+                  </button>
                 </div>
               )}
             </div>
